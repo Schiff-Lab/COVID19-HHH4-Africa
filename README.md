@@ -5,7 +5,7 @@ This is the R code associated with the paper "Tracking and predicting the Africa
 This code was tested with R version 3.6 and 4.0.2
 
 
-Run these files
+Run these files:
 
 01_dataprocessing.R
 
