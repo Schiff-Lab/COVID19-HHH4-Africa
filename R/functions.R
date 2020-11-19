@@ -52,3 +52,32 @@ map <- function(x, shape, palette, labs = NULL, breaks = NULL, n, digits = 0,
               panel.label.size = 1.4, 
               ...)
 }
+
+extrac_var_climate <- function(var, data) {
+  data_clean <- data %>% 
+    select(Date, name, var) %>% 
+    filter(name %in% colnames(counts)) %>% 
+    tidyr::spread(key = name, value = var) %>% 
+    select(-Date) %>% 
+    as.matrix()
+  rownames(data_clean) <- as.character(unique(data$Date))
+  return(data_clean)
+}
+
+reshape_df <- function(x, value) {
+  y <- as_tibble(t(x))
+  y$COUNTRY <- colnames(x)
+  y <- y %>% 
+    tidyr::gather(key = "time", value = !!value, -COUNTRY) %>% 
+    mutate(time = as.Date(time))
+  return(y)
+}
+
+tidymat <- function(x, type, var) {
+  colnames(x) <- colnames(fit$stsObj)
+  x <- as_tibble(x)
+  x$time <- as.Date(final_dates)
+  x$type <- type
+  x$var <- var
+  tidyr::gather(x, key = "country", value = "contrib", -time, -type, -var)
+} 

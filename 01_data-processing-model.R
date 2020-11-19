@@ -16,6 +16,16 @@ policy <- readr::read_csv("data/original/OxCGRT_latest.csv")
 
 # DATA PREPARATION -------------------------------------------------------------
 
+# Remove Countries with missing policy data
+countries_to_remove <-  c("Madagascar", "Western Sahara", "Guinea-Bissau", "Equatorial Guinea")
+africa <- africa[!(africa$name %in% countries_to_remove), ] 
+
+# Clean JHU data :
+#   - rename countries according to shapefile
+#   - keep only countries that we are going to analyse
+#   - calculate daily new cases
+#   - replace the 4 negatives with 0
+
 cases <- cases %>% 
   select(-`Province/State`, -Lat, -Long) %>% 
   rename(country = `Country/Region`) %>% 
@@ -80,13 +90,23 @@ sindex[is.na(sindex)] <- 0
 
 rownames(sindex) <- unique(as.character(policy_clean$date))
 
+# Weather data
+weather_clean <- readr::read_csv("data/original/AfricaCountries_2020-12-08_ALLEXTRACTEDDATA.csv")
 
-# Subset to the cases dates
-testing <- testing[rownames(testing) %in% rownames(counts), ]
-sindex <- sindex[rownames(sindex) %in% rownames(counts), ]
+
+# See what the common dates are for the time varying datasets and censor
+# accordingly 
+final_dates <- Reduce(intersect, list(as.character(weather_clean$Date),
+                                      rownames(counts), 
+                                      rownames(sindex)))
+
+counts <- counts[rownames(counts) %in% final_dates, ]
+sindex <- sindex[rownames(sindex) %in% final_dates, ]
+testing <- testing[rownames(testing) %in% final_dates, ]
 
 # Save the cleaned data 
-saveRDS(sindex, "data/processed/stringency_plot.rds")
-saveRDS(testing, "data/processed/testing_plot.rds")
-saveRDS(counts, "data/processed/daily_cases_plot.rds")
-st_write(africa, "data/processed/geodata/africa_plot.gpkg", delete_dsn = T)
+saveRDS(sindex, "data/processed/stringency.rds")
+saveRDS(testing, "data/processed/testing.rds")
+saveRDS(counts, "data/processed/daily_cases.rds")
+st_write(africa, "data/processed/geodata/africa.gpkg", delete_dsn = T)
+

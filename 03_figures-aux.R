@@ -22,18 +22,7 @@ weather_clean <- readr::read_csv("data/original/AfricaCountries_2020-12-08_ALLEX
 sindex <- readRDS("data/processed/stringency_plot.rds")
 testing <- readRDS("data/processed/testing_plot.rds")
 
-# Weather data 
-extrac_var_climate <- function(var, data) {
-  data_clean <- data %>% 
-    select(Date, name, var) %>% 
-    filter(name %in% colnames(counts)) %>% 
-    tidyr::spread(key = name, value = var) %>% 
-    select(-Date) %>% 
-    as.matrix()
-  rownames(data_clean) <- as.character(unique(data$Date))
-  return(data_clean)
-}
-
+# Weather variables
 rain_mean <- extrac_var_climate(var = "rain_mean", data = weather_clean)
 temp_mean <- extrac_var_climate(var = "temp_mean", data = weather_clean)
 sh_mean <- extrac_var_climate(var = "sh_mean", data = weather_clean) * 1000
@@ -48,15 +37,6 @@ testing <- testing[rownames(testing) %in% final_dates, ]
 
 
 # Reshape data for plotting
-reshape_df <- function(x, value) {
-  y <- as_tibble(t(x))
-  y$COUNTRY <- colnames(x)
-  y <- y %>% 
-    tidyr::gather(key = "time", value = !!value, -COUNTRY) %>% 
-    mutate(time = as.Date(time))
-  return(y)
-}
-
 all_input <- reshape_df(counts, "observed") %>% 
   inner_join(reshape_df(sindex, "sindex")) %>% 
   inner_join(reshape_df(testing, "testing")) %>% 
@@ -83,7 +63,7 @@ all_input %>%
   tidyr::gather(key = "var", value = "value", -COUNTRY, -time) %>% 
   ggplot(aes(x = time, y = value)) +
   geom_rect(data = df, aes(xmin = first_day, xmax = last_day,
-                ymin = -Inf, ymax = Inf), fill = "grey", alpha = 0.1) +
+                           ymin = -Inf, ymax = Inf), fill = "grey", alpha = 0.1) +
   geom_rect(data = df, aes(xmin = last_day, xmax = last_day + 7,
                            ymin = -Inf, ymax = Inf), fill = "orange", alpha = 0.1) +
   geom_line(aes(col = COUNTRY)) +
@@ -103,7 +83,7 @@ all_input %>%
   theme_bw(base_size = 12) +
   theme(legend.position = "top")
 
-ggsave("figs/paper/figure1a.pdf", width = 7, height = 9)
+ggsave("figs/figure1A.pdf", width = 7, height = 9)
 
 # Time series of time varying variables
 
@@ -115,7 +95,7 @@ ggplot(all_input, aes(x = time, y = rp100k)) +
   scale_x_date(date_labels = "%b", expand = c(0, 0)) +
   theme_bw(base_size = 13) 
 
-ggsave("figs/paper/ts_cases.pdf", width = 18, height = 10)
+ggsave("figs/figureS1.pdf", width = 18, height = 10)
 
 # - Sindex
 ggplot(all_input, aes(x = time, y = sindex)) +
@@ -125,7 +105,7 @@ ggplot(all_input, aes(x = time, y = sindex)) +
   scale_x_date(date_labels = "%b", expand = c(0, 0)) +
   theme_bw(base_size = 13) 
 
-ggsave("figs/paper/ts_sindex.pdf", width = 18, height = 10)
+ggsave("figs/figureS2.pdf", width = 18, height = 10)
 
 # - Testing
 ggplot(all_input, aes(x = time, y = testing)) +
@@ -136,7 +116,7 @@ ggplot(all_input, aes(x = time, y = testing)) +
   scale_y_continuous(breaks = 0:3) +
   theme_bw(base_size = 13) 
 
-ggsave("figs/paper/ts_testing.pdf", width = 18, height = 10)
+ggsave("figs/figureS3.pdf", width = 18, height = 10)
 
 # - Temperature
 ggplot(all_input, aes(x = time, y = temp)) +
@@ -146,7 +126,7 @@ ggplot(all_input, aes(x = time, y = temp)) +
   scale_x_date(date_labels = "%b", expand = c(0, 0)) +
   theme_bw(base_size = 13) 
 
-ggsave("figs/paper/ts_temp.pdf", width = 18, height = 10)
+ggsave("figs/figureS4.pdf", width = 18, height = 10)
 
 # - Rain
 ggplot(all_input, aes(x = time, y = rain)) +
@@ -156,7 +136,7 @@ ggplot(all_input, aes(x = time, y = rain)) +
   scale_x_date(date_labels = "%b", expand = c(0, 0)) +
   theme_bw(base_size = 13) 
 
-ggsave("figs/paper/ts_rain.pdf", width = 18, height = 10)
+ggsave("figs/figureS5.pdf", width = 18, height = 10)
 
 # Humidity
 ggplot(all_input, aes(x = time, y = sh)) +
@@ -166,14 +146,14 @@ ggplot(all_input, aes(x = time, y = sh)) +
   scale_x_date(date_labels = "%b", expand = c(0, 0)) +
   theme_bw(base_size = 13) 
 
-ggsave("figs/paper/ts_sh.pdf", width = 18, height = 10)
+ggsave("figs/figureS6.pdf", width = 18, height = 10)
 
 # Map with total cases
 cases_total <- reshape_df(counts, "observed") %>% 
   group_by(COUNTRY) %>% 
   summarise(total = sum(observed)) 
 
-  
+
 africa <- africa %>% 
   inner_join(cases_total, by = c("name" = "COUNTRY"))
 
@@ -183,8 +163,7 @@ rpk <- map(x = "rpk100", shape = africa, palette = "-RdYlBu",
            n = 10, digits = 0, legend_title = "", 
            panel_title = "Total cases reported per 100,000 up to 08-13-2020")
 
-tmap_save(rpk, "figs/paper/figure1b.pdf",
-          width = 7, height = 8)
+tmap_save(rpk, "figs/figure1B.pdf", width = 7, height = 8)
 
 # Map with predictive scores
 fit <- readRDS("output/fitted_model_LAG7_RE.rds") # final model
@@ -194,15 +173,38 @@ forecast <- oneStepAhead_hhh4lag(fit, tp = tp, type = "final")
 fitScores <- colMeans(scores(forecast, which = "logs", individual = T))
 logs <- tibble(name = names(fitScores), score = as.numeric(fitScores))
 
+fit$control$ar$lag <- 1
+fit$control$ne$lag <- 1
+calibrationTest(fit, which = "logs")
+
+calib_test <- tibble(name = colnames(forecast$observed),
+                     z = NA,
+                     pvalue = NA)
+size <- as.numeric(unique(exp(forecast$psi)))
+for (i in 1:ncol(forecast$observed)) {
+  test <- x <- calibrationTest(x = forecast$observed[, i], 
+                               mu = forecast$pred[, i], 
+                               size = size, which = "logs")
+  calib_test$z[i] <- test$statistic
+  calib_test$pvalue[i] <- test$p.value
+}
+
+calibrationTest(x = forecast$observed, 
+                mu = forecast$pred, 
+                size = size, which = "logs")
+
 africa <- africa %>% 
-  left_join(logs)
+  left_join(calib_test)
 
-logs_map <- map(x = "score", shape = africa, palette = "Blues",
-                n = 10, digits = 1, legend_title = "Score", 
-                panel_title = "Logarithmic score")
+breaks <- c(0, 0.01, 0.05, 0.10, 1)
+pv_map <- map(x = "pvalue", shape = africa, 
+              palette = "RdBu", 
+              labs = c("< 0.01", "0.01 - 0.05", "0.05 - 0.10", "> 0.10"),
+              breaks = breaks, digits = 2, legend_title = "P-value", 
+              panel_title = "Calibration Test")
+pv_map$tm_fill$palette <- c("#8C0C25", "#C7433F", "#EB9072", "#F7F7F7")
 
-tmap_save(logs_map, "figs/paper/logs_map.pdf",
-          width = 7, height = 8)
+tmap_save(pv_map, "figs/figureS13.pdf", width = 7, height = 8)
 
 # Forest plot with random effects 
 res <- exp(ranef(fit))
@@ -226,34 +228,11 @@ ggplot(out_res) +
   labs(x = "Relative risk of random effects", y = "Country") +
   theme_bw() 
 
-ggsave("figs/paper/reff_forest.pdf", width = 7 * 2, height = 8)  
-
-# Backcasting plot -------------------------------------------------------------
-
-backcast <- readr::read_csv("output/backcasting.csv")
-
-backcast %>% 
-  mutate(start_day = as.Date(start_day)) %>% 
-  tidyr::gather(key = "Country", value = "logs", -start_day) %>% 
-  ggplot(aes(x = start_day, y = Country)) + 
-  geom_tile(aes(fill = logs), colour = "white") +
-  scale_fill_gradient(low = "#ebf2ed", high = "#2f67d0", na.value = "red") +
-  labs(x = "Starting day", y = "Country") + 
-  scale_x_date(expand = c(0, 0), date_breaks = "7 day", date_labels = "%b %d") +
-  coord_equal()
+ggsave("figs/figure3CD.pdf", width = 7 * 2, height = 8)  
 
 # Term contributions plot ------------------------------------------------------
 nterms <- terms(fit)$nGroups
 coefs <- coef(fit)[1:nterms]
-
-tidymat <- function(x, type, var) {
-  colnames(x) <- colnames(fit$stsObj)
-  x <- as_tibble(x)
-  x$time <- as.Date(final_dates)
-  x$type <- type
-  x$var <- var
-  tidyr::gather(x, key = "country", value = "contrib", -time, -type, -var)
-} 
 
 # AR contributions 
 pop_ar <- (coefs["ar.log(pop)"] * log(fit$control$data$pop)) %>% 
@@ -378,7 +357,7 @@ ggpubr::ggarrange(A1, A2, B1, B2, labels = c("A", "", "B", ""),
                   widths = c(1, 2), nrow = 1,
                   common.legend = T)
 
-ggsave("figs/paper/terms_contributions.pdf", width = 10, height = 7)  
+ggsave("figs/figure2.pdf", width = 10, height = 7)  
 
 # MAP FOR TIME CONSTANT VARIABLES ----------------------------------------------
 pop <- map(x = "Pop2020", shape = africa, 
@@ -386,12 +365,11 @@ pop <- map(x = "Pop2020", shape = africa,
            n = 8, digits = 0, legend_title = "Population", 
            panel_title = "Population in 2020")
 
-africa$HDI <- africa$HDI_2018 * 100
-HDI <- map(x = "HDI", shape = africa, 
-           palette = function(x) viridisLite::viridis(x, direction = -1),
-           n = 6, digits = 0, legend_title = "HDI (%)", 
+africa$HDI <- africa$HDI_Level
+HDI <- map(x = "HDI", shape = africa, breaks = c(0, 1, 2, 3),
+           palette = "-Set3", labs = c("Low", "Medium", "High"),  
+           legend_title = "HDI", 
            panel_title = "Human Development Index")
-
 
 africa$landlock <- as.factor(africa$landlock)
 LL <- map(x = "landlock", shape = africa, breaks = c(0, 1),
@@ -405,52 +383,14 @@ region <- map(x = "Region", shape = africa, breaks = c(0, 1),
               panel_title = "Regions")
 
 panel <- tmap_arrange(pop, HDI, LL, region, ncol = 2, nrow = 2)
-tmap_save(panel, "figs/paper/maps_time_constant.pdf",
-          width = 7 * 2, height = 8 * 2)
+tmap_save(panel, "figs/figureS14.pdf", width = 7 * 2, height = 8 * 2)
 
-ggplot(africa, aes(x = Median_age, y = HDI)) +
+ggplot(africa, aes(x = Median_age, y = HDI_2018 * 100)) +
   geom_smooth(method = "lm") +
   geom_point() +
-  annotate("text", x = 17, y = 80, label = "R = 071, p-value < 0.05") +
   labs(x = "Median Age (years)", y = "Human Development Index (%)") +
   theme_bw()
-ggsave(filename = "figs/paper/hdi_mage.pdf", width = 7, height = 5)
-
-# TABLES -----------------------------------------------------------------------
-ar7 <- readr::read_csv("output/tab_params_LAG7.csv")
-ar7_re <- readr::read_csv("output/tab_params_LAG7_RE.csv")
-
-library(knitr)
-library(kableExtra)
-
-create_tab <- function(x, i) {
-  x <- x[1:i, ]
-  pars <- as.numeric(x$coefs)
-  ci_up <- x$`97.5 %`
-  ci_low <- x$`2.5 %`
-  ci <- cbind(ci_low, ci_up) 
-  out <- cbind(pars, ci)
-  
-  ci <- apply(out[, 2:3], 1, function(x) paste0("(", x[1], ", ", x[2], ")"))
-  tab <- tibble(Parameter = x$Params, Estimate = out[,1], CI = ci)
-  return(tab)
-}
-
-ar7_tab <- create_tab(ar7, 24) 
-ar7re_tab <- create_tab(ar7_re, 24) 
-
-
-all_tab <- ar7_tab %>% 
-  full_join(ar7re_tab, by = "Parameter")
-
-kable(all_tab, booktabs = T, linesep = "", align = "l", escape = F,
-      caption = "Maximum likelihood estimates and corresponding 95\\% confidence intervals for a model with 7 lags with and without random effects (REs).", 
-      format = "latex",
-      col.names = c("Parameter", rep(c("Relative Risk", "95\\% CI"), times = 2))) %>%
-  kable_styling(latex_options = c("HOLD_position", "scale_down")) %>% 
-  add_header_above(c(" " = 1, "AR7 no REs" = 2, "AR7 wutg REs" = 2), 
-                   bold = T) %>% 
-  row_spec(0, bold = T) 
+ggsave(filename = "figs/S15.pdf", width = 7, height = 5)
 
 # WEIGHTS ----------------------------------------------------------------------
 wmat <- getNEweights(fit) %>% 
@@ -471,7 +411,7 @@ ggplot(wmat, aes(x = to, y = from)) +
   coord_equal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 0))
 
-ggsave(filename = "figs/paper/wji.pdf", width = 10.5, height = 9.5)
+ggsave(filename = "figs/S16B.pdf", width = 10.5, height = 9.5)
 
 rho <-  coef(fit)[["neweights.d"]]
 rho_low <- confint(fit)["neweights.d", 1]
@@ -486,4 +426,4 @@ ggplot(what, aes(x = o, y = w)) +
   scale_x_continuous(breaks = 1:9) +
   labs(x = "Adjacency order", y = "Non-normalized weights")
 
-ggsave(filename = "figs/paper/power_law.pdf", width = 6, height = 4)
+ggsave(filename = "figs/S16A.pdf", width = 6, height = 4)

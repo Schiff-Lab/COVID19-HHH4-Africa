@@ -25,20 +25,6 @@ sindex <- readRDS("data/processed/stringency.rds") / 10
 testing <- readRDS("data/processed/testing.rds")
 
 # Weather data 
-extrac_var_climate <- function(var, data) {
-  data_clean <- data %>% 
-    select(Date, name, var) %>% 
-    filter(name %in% colnames(counts)) %>% 
-    tidyr::spread(key = name, value = var) %>% 
-    select(-Date) %>% 
-    as.matrix()
-  rownames(data_clean) <- as.character(unique(data$Date))
-  return(data_clean)
-}
-
-
-
-
 rain_mean <- extrac_var_climate(var = "rain_mean", data = weather_clean)
 temp_mean <- extrac_var_climate(var = "temp_mean", data = weather_clean)
 sh_mean <- extrac_var_climate(var = "sh_mean", data = weather_clean) 
@@ -51,7 +37,7 @@ sh_mean <- (sh_mean - mean(sh_mean)) / sd(sh_mean)
 
 # See what the common dates are for the time varying datasets and censor
 # accordingly 
-final_dates <- Reduce(intersect, list(as.character(rownames(rain_mean)), rownames(counts), 
+final_dates <- Reduce(intersect, list(rownames(rain_mean), rownames(counts), 
                                       rownames(sindex)))
 
 counts <- counts[rownames(counts) %in% final_dates, ]
@@ -77,18 +63,12 @@ epi_sts <- sts(observed = counts,
 
 # Create covariates 
 
+# Population
 pop <- population(epi_sts)
 
 
 # HDI by category
 HDI_cat <- as.numeric(africa$HDI_Level)
-# HDImedium <- ifelse(HDI_cat == 1, 1, 0) 
-# HDIhigh <- ifelse(HDI_cat == 2, 1, 0) 
-# HDI_medium <- matrix(HDImedium, ncol = ncol(epi_sts), nrow = nrow(epi_sts),
-#                      byrow = T)
-# 
-# HDI_high <- matrix(HDIhigh, ncol = ncol(epi_sts), nrow = nrow(epi_sts),
-#                    byrow = T)
 HDI_cat <- matrix(HDI_cat, ncol = ncol(epi_sts), nrow = nrow(epi_sts),
                   byrow = T)
 
@@ -103,8 +83,8 @@ SSA <- matrix(1 - africa$North_Afri,
 LL <- matrix(africa$landlock, 
              ncol = ncol(epi_sts), nrow = nrow(epi_sts),
              byrow = T)
-# MODEL ------------------------------------------------------------------------
 
+# Lag time varying variables
 k <- 7
 sindex_lag <- xts::lag.xts(sindex, k = 7)
 testing_lag <- xts::lag.xts(testing, k = 7)
@@ -112,14 +92,12 @@ temp_mean_lag <- xts::lag.xts(temp_mean, k = 7)
 rain_mean_lag <- xts::lag.xts(rain_mean, k = 7)
 sh_mean_lag <- xts::lag.xts(sh_mean, k = 7)
 
+# MODEL ------------------------------------------------------------------------
 start_day <- "2020-03-28"
 end_day <- "2020-08-06"
 
 fit_start <- which(rownames(counts) == start_day) 
 fit_end <- which(rownames(counts) == end_day) 
-
-
-# MODEL ------------------------------------------------------------------------
 
 # Best AR1 model with no RE 
 f_end <- ~ 1 
@@ -138,7 +116,7 @@ model_basic <- list(
 
 fit_basic <- hhh4(epi_sts, control = model_basic)
 
-# Lagged version of best AR1 model 
+# Lagged version of previous model 
 f_end <- ~ 1 
 f_ar <- ~ 1 + log(pop) + HDI_cat + LL + sindex_lag + testing_lag + 
   rain_mean_lag + temp_mean_lag + sh_mean_lag 
@@ -157,8 +135,6 @@ for (i in 1:(lags - 1)) {
     funct_lag = poisson_lag, 
     max_lag = i + 1)
   
-  # Note that funct_lag = geometric_lag and max_lag = 5 are the defaults in hhh4lag 
-  # and would not need to be specified explicitly.
   fit_lag_pois <- profile_par_lag(epi_sts, model_lag) # now use hhh4lag
   AIC_poisson[i] <- AIC(fit_lag_pois)
   print(i)
@@ -176,8 +152,6 @@ for (i in 1:(lags - 1)) {
     funct_lag = geometric_lag, 
     max_lag = i + 1)
   
-  # Note that funct_lag = geometric_lag and max_lag = 5 are the defaults in hhh4lag 
-  # and would not need to be specified explicitly.
   fit_lag_geom <- profile_par_lag(epi_sts, model_lag) # now use hhh4lag
   AIC_geom[i] <- AIC(fit_lag_geom)
   print(i)
@@ -198,9 +172,10 @@ tibble(p = 2:lags, Geometric = AIC_geom, Poisson = AIC_poisson,
   theme_gray(base_size = 13) +
   theme(legend.position = "top") 
 
-ggsave("figs/paper/AIC_ud.pdf", width = 7, height = 5)
+ggsave("figs/figureS10A.pdf", width = 7, height = 5)
 
 # FIT BEST POISSON AND GEOMETRIC MODEL WITH OPTIMAL LAG AND PLOT WEIGHTS
+
 # Geometric
 model_lag <- list(
   end = list(f = f_end, offset = population(epi_sts)),
@@ -248,7 +223,7 @@ tibble(dist = rep(c("Geometric", "Poisson"), each = length(wgeom)),
   theme_gray(base_size = 13) +
   theme(legend.position = "top") 
 
-ggsave("figs/paper/weights.pdf", width = 7, height = 5)
+ggsave("figs/figureS10B.pdf", width = 7, height = 5)
 
 
 # LAGGED POISSON WITH AND WITHOUT RE WITH OPTIMAL NUMBER OF LAGS  
@@ -279,7 +254,7 @@ summary(fit_lag, idx2Exp = T)
 confint(fit_lag, parm = "overdisp")
 wpois <-   fit_lag$distr_lag
   
-saveRDS(fit_lag, paste0("output/fitted_model_LAG", lag_optimal, ".rds"))
+saveRDS(fit_lag, paste0("output/models/fitted_model_LAG", lag_optimal, ".rds"))
   
 fit <- fit_lag
 nterms <- terms(fit)$nGroups + 2
@@ -301,7 +276,8 @@ tab <- rbind(cbind(Params = rownames(tab), tab),
              c("", "", "", ""),
              names(fitScores),
              round(as.numeric(fitScores), 3))
-write.csv(tab, paste0("output/tab_params_LAG", lag_optimal, ".csv"), row.names = F)
+write.csv(tab, paste0("output/tables/tab_params_LAG", lag_optimal, ".csv"),
+          row.names = F)
   
 # INTRODUCE REs
 f_end <- ~ 1 
@@ -326,7 +302,7 @@ model_lag <- list(
   max_lag = lag_optimal)
   
 fit_lag <- hhh4_lag(epi_sts, model_lag)
-saveRDS(fit_lag, paste0("output/fitted_model_LAG", lag_optimal, "_RE.rds"))
+saveRDS(fit_lag, paste0("output/models/fitted_model_LAG", lag_optimal, "_RE.rds"))
   
 fit <- fit_lag
 nterms <- terms(fit)$nGroups + 2
@@ -348,79 +324,14 @@ tab <- rbind(cbind(Params = rownames(tab), tab),
              c("", "", "", ""),
              names(fitScores),
              round(as.numeric(fitScores), 3))
-write.csv(tab, paste0("output/tab_params_LAG", lag_optimal, "_RE.csv"), row.names = F)
+write.csv(tab, paste0("output/tables/tab_params_LAG", lag_optimal, "_RE.csv"),
+          row.names = F)
 
-# # BACKCASTING SIMULATION -------------------------------------------------------
-# 
-# nrows <- sum(seq(fit_start, fit_end, by = 7) <= fit_end - 14)
-# 
-# out <- matrix(NA, nrow = nrows, ncol = ncol(epi_sts))
-# 
-# days <- seq(fit_start, fit_end, by = 7)[1:nrows]
-# 
-# for(i in 1:length(days)) {
-#   try({
-#     f_end <- ~ 1 
-#     f_ar <- ~ 1 + log(pop) + HDI_cat + LL + sindex_lag + testing_lag +
-#       rain_mean_lag + temp_mean_lag + sh_mean_lag
-#     f_ne <- ~ 1 + log(pop) + HDI_cat + LL + sindex_lag + testing_lag
-# 
-#     message("Fitting model without REs")
-#     
-#     model_lag <- list(
-#       end = list(f = f_end, offset = population(epi_sts)),
-#       ar = list(f = f_ar),
-#       ne = list(f = f_ne, weights = W_powerlaw(maxlag = 9)),
-#       optimizer = list(stop = list(iter.max = 50),
-#                        variance = list(method = "Nelder-Mead")),
-#       family = "NegBin1",
-#       data = list(pop = pop, HDI_cat = HDI_cat,
-#                   SSA = SSA, LL = LL, sindex_lag = sindex_lag,
-#                   rain_mean_lag = rain_mean_lag, temp_mean_lag = temp_mean_lag, 
-#                   testing_lag = testing_lag,
-#                   sh_mean_lag = sh_mean_lag),
-#       subset = days[i]:fit_end,
-#       funct_lag = poisson_lag, 
-#       max_lag = lag_optimal)
-#     
-#     fit_lag <- profile_par_lag(epi_sts, model_lag)
-#     wpois <-   fit_lag$distr_lag
-#     
-#     message("Fitting model with REs")
-#     
-#     # INTRODUCE REs
-#     f_end <- ~ 1 
-#     f_ar <- ~ -1 + log(pop) + HDI_cat + LL + sindex_lag + testing_lag +
-#       rain_mean_lag + temp_mean_lag + sh_mean_lag + ri()
-#     f_ne <- ~ 1 + log(pop) + HDI_cat + LL + sindex_lag + testing_lag 
-#     
-#     model_lag <- list(
-#       end = list(f = f_end, offset = population(epi_sts)),
-#       ar = list(f = f_ar),
-#       ne = list(f = f_ne, weights = W_powerlaw(maxlag = 9)),
-#       optimizer = list(stop = list(iter.max = 50)),
-#       family = "NegBin1",
-#       data = list(pop = pop, HDI_cat = HDI_cat,
-#                   SSA = SSA, LL = LL, sindex_lag = sindex_lag,
-#                   rain_mean_lag = rain_mean_lag, temp_mean_lag = temp_mean_lag, 
-#                   testing_lag = testing_lag,
-#                   sh_mean_lag = sh_mean_lag),
-#       subset = days[i]:fit_end,
-#       funct_lag = poisson_lag, 
-#       par_lag = fit_lag$par_lag,
-#       max_lag = lag_optimal)
-#     
-#     fit_lag <- hhh4_lag(epi_sts, model_lag)
-#     
-#     fit <- fit_lag
-#     tp <- c(fit_end, nrow(epi_sts) - 1)
-#     forecast <- oneStepAhead_hhh4lag(fit, tp = tp, type = "final")
-#     fitScores <- colMeans(scores(forecast, which = "logs", individual = T))
-#     out[i, ] <- as.numeric(fitScores)
-#   })
-#   print(i)
-# }
-# 
-# colnames(out) <- names(fitScores)
-# out <- bind_cols(start_day = rownames(counts)[days], as_tibble(out))
-# readr::write_csv(out, path = "output/backcasting.csv")
+# P - VALUES -------------------------------------------------------------------
+beta_hat <- fit$coefficients[1:16]
+sd_hat <- fit$se[1:16]
+all.equal(names(beta_hat), names(sd_hat))
+
+zscores <- beta_hat / sd_hat
+pvalues <- 2 * pnorm(abs(zscores), lower.tail = F)
+cbind(round(pvalues, 3), round(pvalues, 4))
