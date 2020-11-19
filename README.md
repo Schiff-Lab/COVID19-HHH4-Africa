@@ -1,4 +1,4 @@
-# COVID19-HHH4-Africa
+# Tracking and predicting the African COVID-19 pandemic
 
 This is the R code associated with the paper "Tracking and predicting the African COVID-19 pandemic" ([medrxiv link](https://www.medrxiv.org/content/10.1101/2020.11.13.20231241v1))
 
