@@ -16,4 +16,6 @@ Set the working directory to the one with these source files, and run these file
 
 - `03_figures_aux.R`: use processed data and fitted model to create other figures in the `figs` folder.
 
+The `R` folder contains the `functions.R` file that has a set of costum functions needed to run the code.
+
 
