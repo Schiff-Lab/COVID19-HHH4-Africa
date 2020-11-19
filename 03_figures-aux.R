@@ -166,7 +166,7 @@ rpk <- map(x = "rpk100", shape = africa, palette = "-RdYlBu",
 tmap_save(rpk, "figs/figure1B.pdf", width = 7, height = 8)
 
 # Map with predictive scores
-fit <- readRDS("output/fitted_model_LAG7_RE.rds") # final model
+fit <- readRDS("output/models/fitted_model_LAG7_RE.rds") # final model
 fit_end <- fit$control$subset[length(fit$control$subset)]
 tp <- c(fit_end, nrow(fit$stsObj) - 1)
 forecast <- oneStepAhead_hhh4lag(fit, tp = tp, type = "final")
