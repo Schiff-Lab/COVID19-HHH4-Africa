@@ -29,11 +29,6 @@ rain_mean <- extrac_var_climate(var = "rain_mean", data = weather_clean)
 temp_mean <- extrac_var_climate(var = "temp_mean", data = weather_clean)
 sh_mean <- extrac_var_climate(var = "sh_mean", data = weather_clean) 
 
-# Standardise climatic variables
-rain_mean <- (rain_mean - mean(rain_mean)) / sd(rain_mean)
-temp_mean <- (temp_mean - mean(temp_mean)) / sd(temp_mean)
-sh_mean <- (sh_mean - mean(sh_mean)) / sd(sh_mean)
-
 
 # See what the common dates are for the time varying datasets and censor
 # accordingly 
@@ -43,6 +38,29 @@ final_dates <- Reduce(intersect, list(rownames(rain_mean), rownames(counts),
 counts <- counts[rownames(counts) %in% final_dates, ]
 sindex <- sindex[rownames(sindex) %in% final_dates, ]
 testing <- testing[rownames(testing) %in% final_dates, ]
+
+
+rain_mean <- rain_mean[rownames(rain_mean) %in% final_dates,]
+temp_mean <- temp_mean[rownames(temp_mean) %in% final_dates,]
+sh_mean <- sh_mean[rownames(sh_mean) %in% final_dates,]
+
+end_day = final_dates[length(final_dates)]
+shinydata = as.data.frame(matrix(nrow=as.numeric(as.Date(end_day)-as.Date(final_dates[1])+1)*dim(counts)[2],ncol=0))
+shinydata$time = rep(seq(from=as.Date(final_dates[1]),to=as.Date(end_day),by=1),dim(counts)[2])
+shinydata$country = as.vector(t(matrix(colnames(counts),dim(counts)[2],as.numeric(as.Date(end_day)-as.Date(final_dates[1])+1))))
+shinydata$observed =  as.vector(counts[rownames(counts)<=as.Date(end_day), ])
+shinydata$rain = as.vector(rain_mean)
+shinydata$humidity = as.vector(sh_mean)
+shinydata$temperature = as.vector(temp_mean)
+shinydata$stringency = as.vector(sindex[as.Date(rownames(sindex)) <= end_day,])
+shinydata$testing = as.vector(testing[as.Date(rownames(testing)) <= end_day,])
+
+
+# Standardise climatic variables
+rain_mean <- (rain_mean - mean(rain_mean)) / sd(rain_mean)
+temp_mean <- (temp_mean - mean(temp_mean)) / sd(temp_mean)
+sh_mean <- (sh_mean - mean(sh_mean)) / sd(sh_mean)
+
 
 # Check that the order of cases and countries in the shapefile are the same
 all(colnames(counts) == africa$name)
@@ -93,11 +111,14 @@ rain_mean_lag <- xts::lag.xts(rain_mean, k = 7)
 sh_mean_lag <- xts::lag.xts(sh_mean, k = 7)
 
 # MODEL ------------------------------------------------------------------------
-start_day <- "2020-03-28"
-end_day <- "2020-08-06"
+start_fit <- "2020-03-28"
+end_fit <- "2020-08-06"
 
-fit_start <- which(rownames(counts) == start_day) 
-fit_end <- which(rownames(counts) == end_day) 
+saveRDS(list(shinydata,africa,start_fit,end_fit,end_day), "output/models/shinydata.rds")
+
+
+fit_start <- which(rownames(counts) == start_fit) 
+fit_end <- which(rownames(counts) == end_fit) 
 
 # Best AR1 model with no RE 
 f_end <- ~ 1 
