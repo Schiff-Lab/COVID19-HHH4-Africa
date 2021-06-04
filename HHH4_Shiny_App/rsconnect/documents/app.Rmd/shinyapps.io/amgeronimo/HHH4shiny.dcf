@@ -1,0 +1,12 @@
+name: HHH4shiny
+title: HHH4shiny
+username:
+account: amgeronimo
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 4143720
+bundleId: 4608055
+url: https://amgeronimo.shinyapps.io/HHH4shiny/
+when: 1621267976.9776
+asMultiple: FALSE
+asStatic: FALSE
