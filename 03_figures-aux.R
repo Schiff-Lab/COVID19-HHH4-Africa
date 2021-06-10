@@ -284,6 +284,18 @@ forlegend2 <- expand.grid(time = as.Date("2020-07-15"),
                           contrib = NA) %>% 
   as_tibble()
 
+
+forlegend2_ne <- expand.grid(time = as.Date("2020-07-15"), 
+                             type = "Time varying",
+                             var = unique(c(contrib_ne$var[contrib_ne$type == "Time constant"],
+                                            setdiff(contrib_ar$var, contrib_ne$var))),
+                             country = unique(contrib_ne$country),
+                             contrib = NA) %>% 
+  as_tibble()
+
+
+
+
 A1 <- contrib_ar %>% 
   na.omit() %>% 
   bind_rows(forlegend1) %>% 
@@ -340,7 +352,7 @@ B1 <- contrib_ne %>%
 
 B2 <- contrib_ne %>% 
   na.omit() %>% 
-  bind_rows(forlegend2) %>% 
+  bind_rows(forlegend2_ne) %>% 
   filter(country %in% c("Egypt", "Senegal", "South Africa", "Uganda"),
          time >= "2020-03-08", type == "Time varying") %>% 
   ggplot(aes(x = time, y = contrib)) +
@@ -357,7 +369,7 @@ ggpubr::ggarrange(A1, A2, B1, B2, labels = c("A", "", "B", ""),
                   widths = c(1, 2), nrow = 1,
                   common.legend = T)
 
-ggsave("figs/figure2.pdf", width = 10, height = 7)  
+ggsave("figs/figureS11.pdf", width = 10, height = 7)  
 
 # MAP FOR TIME CONSTANT VARIABLES ----------------------------------------------
 pop <- map(x = "Pop2020", shape = africa, 
