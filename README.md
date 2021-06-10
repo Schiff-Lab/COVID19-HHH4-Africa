@@ -4,7 +4,7 @@ This is the R code associated with the paper "Tracking and predicting the Africa
 
 This code was tested with R version 3.6.3 on Ubuntu 18.04 LTS and Windows and version 4.0.2 on Mac OS
 
-A visualization of the model inputs and results can be found at our ([R-shiny server](http://146.186.149.88:3838/COVID19-HHH4-Africa/))
+A visualization of the model inputs and results can be found at our [R-shiny server](http://146.186.149.88:3838/COVID19-HHH4-Africa/)
 
 Set the working directory to the one with these source files, and run these files:
 
