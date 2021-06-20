@@ -20,4 +20,6 @@ Set the working directory to the one with these source files, and run these file
 
 The `R` folder contains the `functions.R` file that has a set of costum functions needed to run the code.
 
+A link to the accepted paper in PNAS will be provided soon.
+
 
