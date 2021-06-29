@@ -1,6 +1,6 @@
 # Tracking and predicting the African COVID-19 pandemic
 
-This is the R code associated with the paper "Tracking and predicting the African COVID-19 pandemic" ([medrxiv link](https://www.medrxiv.org/content/10.1101/2020.11.13.20231241v1))
+This is the R code associated with the paper, "Pan-African evolution of within- and between-country COVID-19", Proceedings of the National Academy of Sciences (PNAS), July 13, 2021 118 (28) e2026664118, https://www.pnas.org/content/118/28/e2026664118 
 
 This code was tested with R version 3.6.3 on Ubuntu 18.04 LTS and Windows and version 4.0.2 on Mac OS
 
@@ -19,7 +19,5 @@ Set the working directory to the one with these source files, and run these file
 - `03_figures_aux.R`: use processed data and fitted model to create other figures in the `figs` folder.
 
 The `R` folder contains the `functions.R` file that has a set of costum functions needed to run the code.
-
-A link to the accepted paper in PNAS will be provided soon.
 
 
