@@ -6,13 +6,13 @@ pacman::p_load(pkgs, character.only = T)
 # LOAD DATA --------------------------------------------------------------------
 
 # Cases at country level  (JHU data)
-cases <- readr::read_csv("data/original/time_series_covid19_confirmed_global.csv")
+cases <- readr::read_csv("data/original/cases_raw.csv")
 
 # Shapefile for Africa
 africa <- st_read("data/original/geodata/africa.gpkg") 
 
 # Policy index
-policy <- readr::read_csv("data/original/OxCGRT_latest.csv")
+policy <- readr::read_csv("data/original/policy_raw.csv")
 
 # DATA PREPARATION -------------------------------------------------------------
 
@@ -31,14 +31,20 @@ cases <- cases %>%
 
 # Check that the order of cases and countries in the shapefile are the same
 cases <- cases[order(cases$country), ]
-all(cases$country == africa$name)
+all(cases$country %in% africa$name)
+setdiff(africa$name, cases$country)
 
 # Reshape cases with times in the row and geographical units in the column
 # so each column is the cases time series for the county
 # the results should be of dimension T x I 
 
 # First change the names of the columns to proper dates
-names(cases)[-1] <- paste0(names(cases)[-1], 20) %>% 
+dateNames <- function(x) {
+  first <- substr(x, 1, nchar(x) - 2)
+  last <- substr(x, nchar(x) - 1, nchar(x))
+  paste0(first, 20, last)
+}
+names(cases)[-1] <- dateNames(names(cases)[-1]) %>% 
   as.Date(format = "%m/%d/%Y") %>% 
   as.character()
 counts <- t(cases[, -1]) 

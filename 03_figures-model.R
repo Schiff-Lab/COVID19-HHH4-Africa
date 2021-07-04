@@ -12,8 +12,6 @@ counts <- readRDS("data/processed/daily_cases.rds")
 
 # Final model and auxiliary data 
 fit <- readRDS("output/models/fitted_model_LAG7_RE.rds")
-end_day <- "2020-08-06"
-fit_end <- which(rownames(counts) == end_day) 
 
 # Shapefile for ltlas
 africa <- st_read("data/processed/geodata/africa.gpkg") 
@@ -44,24 +42,16 @@ saveRDS(fitted,"output/models/fitted_mean.rds")
 
 reff_mean <- exp(ranef(fit))
 africa$reff_mean_AR <- as.numeric(reff_mean[grep("ar.ri", names(reff_mean))])
-africa$reff_mean_NE <- as.numeric(reff_mean[grep("ne.ri", names(reff_mean))])
-
 
 africa_full <- africa_full %>% 
-  full_join(st_drop_geometry(africa[c("name", "reff_mean_AR", "reff_mean_NE")]))
-  
+  full_join(st_drop_geometry(africa[c("name", "reff_mean_AR")]))
+
 reff_mean_AR <- map(x = "reff_mean_AR", shape = africa_full, palette = "-RdYlBu", 
                     breaks = c(0.5, 0.7, 0.8, 0.9, 1, 1.5, 2, 2.5),
                     digits = 2, legend_title = "Mean relative risk", 
                     panel_title = "Random Effects - Within country")
     
-reff_mean_NE <- map(x = "reff_mean_NE", shape = africa_full,
-                    palette = "-RdYlBu", n = 7, 
-                    digits = 2, legend_title = "Mean relative risk", 
-                    panel_title = "Random Effects - Between country")
-    
-reff_map <- tmap_arrange(reff_mean_AR, reff_mean_NE, ncol = 2)
-tmap_save(reff_map, "figs/figure3AB.pdf", width = 7 * 2, height = 8)
+tmap_save(reff_mean_AR, "figs/figure3AB.pdf", width = 7, height = 8)
   
 
 # CONTRIBUTION OVER TIME FOR SPECIFIC COUNTRIES --------------------------------

@@ -6,18 +6,22 @@ pacman::p_load(pkgs, character.only = T)
 # LOAD DATA --------------------------------------------------------------------
 
 # Cases at country level  (JHU data)
-cases <- readr::read_csv("data/original/time_series_covid19_confirmed_global.csv")
+cases <- readr::read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv")
+readr::write_csv(cases, "data/original/cases_raw.csv")
+
 
 # Shapefile for Africa
 africa <- st_read("data/original/geodata/africa.gpkg") 
 
 # Policy index
-policy <- readr::read_csv("data/original/OxCGRT_latest.csv")
+policy <- readr::read_csv("https://raw.githubusercontent.com/OxCGRT/covid-policy-tracker/master/data/OxCGRT_latest.csv")
+readr::write_csv(policy, "data/original/policy_raw.csv")
 
 # DATA PREPARATION -------------------------------------------------------------
 
-# Remove Countries with missing policy data
-countries_to_remove <-  c("Madagascar", "Western Sahara", "Guinea-Bissau", "Equatorial Guinea")
+# Remove Countries with missing policy data/ not-reporting cases
+countries_to_remove <-  c("Madagascar", "Western Sahara", "Guinea-Bissau", 
+                          "Equatorial Guinea", "Tanzania")
 africa <- africa[!(africa$name %in% countries_to_remove), ] 
 
 # Clean JHU data :
@@ -48,7 +52,12 @@ all(cases$country == africa$name)
 # the results should be of dimension T x I 
 
 # First change the names of the columns to proper dates
-names(cases)[-1] <- paste0(names(cases)[-1], 20) %>% 
+dateNames <- function(x) {
+  first <- substr(x, 1, nchar(x) - 2)
+  last <- substr(x, nchar(x) - 1, nchar(x))
+  paste0(first, 20, last)
+}
+names(cases)[-1] <- dateNames(names(cases)[-1]) %>% 
   as.Date(format = "%m/%d/%Y") %>% 
   as.character()
 counts <- t(cases[, -1]) 
@@ -91,14 +100,16 @@ sindex[is.na(sindex)] <- 0
 rownames(sindex) <- unique(as.character(policy_clean$date))
 
 # Weather data
-weather_clean <- readr::read_csv("data/original/AfricaCountries_2020-12-08_ALLEXTRACTEDDATA.csv")
-
+# weather_clean <- readr::read_csv("data/original/AfricaCountries_2020-12-08_ALLEXTRACTEDDATA.csv")
+  
 
 # See what the common dates are for the time varying datasets and censor
 # accordingly 
-final_dates <- Reduce(intersect, list(as.character(weather_clean$Date),
-                                      rownames(counts), 
-                                      rownames(sindex)))
+# final_dates <- Reduce(intersect, list(as.character(weather_clean$Date),
+#                                       rownames(counts),
+#                                       rownames(sindex)))
+final_dates <- Reduce(intersect, list(rownames(counts), rownames(sindex)))
+
 
 counts <- counts[rownames(counts) %in% final_dates, ]
 sindex <- sindex[rownames(sindex) %in% final_dates, ]
