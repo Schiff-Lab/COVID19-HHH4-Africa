@@ -1,6 +1,6 @@
 # Tracking and predicting the African COVID-19 pandemic
 
-This is the R code associated with the paper "Tracking and predicting the African COVID-19 pandemic" ([medrxiv link](https://www.medrxiv.org/content/10.1101/2020.11.13.20231241v1))
+This is an updated version of the R code provided in the [main branch](https://github.com/Schiff-Lab/COVID19-HHH4-Africa) that allows to run the model on a daily basis. 
 
 This code was tested with R version 3.6.3 on Ubuntu 18.04 LTS and Windows and version 4.0.2 on Mac OS
 
