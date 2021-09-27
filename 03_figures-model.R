@@ -35,7 +35,8 @@ end_day <- inference_days[length(inference_days)]
 fit$terms <- terms(fit)
 fitted <- meanHHH(theta = unname(fit$coefficients), model = fit$terms, 
                   subset = start_day:end_day, total.only = F)
-
+fitted$inference_dates = inference_dates
+saveRDS(fitted,"output/models/fitted_mean_RE.rds")
 
 # RANDOM EFFECTS MAP -----------------------------------------------------------
 
@@ -202,6 +203,7 @@ sims$type <- "OUS"
 all_preds <- quants_insample %>% 
   bind_rows(sims)
 
+
 ggplot(all_preds, aes(x = time)) +
   geom_ribbon(aes(ymin = low95, ymax = up95, fill = type), alpha = .3) +
   geom_ribbon(aes(ymin = low50, ymax = up50, fill = type), alpha = .3) +
@@ -347,6 +349,9 @@ sims$type <- "OUS"
 
 all_preds <- quants_insample %>% 
   bind_rows(sims)
+
+#AG 9/27/21 
+saveRDS(all_preds,"output/models/predictions_RE.rds")
 
 ggplot(all_preds, aes(x = time)) +
   geom_ribbon(aes(ymin = low95, ymax = up95, fill = type), alpha = .3) +

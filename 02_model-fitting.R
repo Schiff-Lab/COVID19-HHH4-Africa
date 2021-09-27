@@ -44,6 +44,26 @@ counts <- counts[rownames(counts) %in% final_dates, ]
 sindex <- sindex[rownames(sindex) %in% final_dates, ]
 testing <- testing[rownames(testing) %in% final_dates, ]
 
+
+#AG 9/27/21
+# Not sure why these three lines weren't included if the above three lines are included.
+ rain_mean <- rain_mean[rownames(rain_mean) %in% final_dates,]
+ temp_mean <- temp_mean[rownames(temp_mean) %in% final_dates,]
+ sh_mean <- sh_mean[rownames(sh_mean) %in% final_dates,]
+
+#added this for compatibility with shiny app
+end_day = final_dates[length(final_dates)]
+shinydata = as.data.frame(matrix(nrow=as.numeric(as.Date(end_day)-as.Date(final_dates[1])+1)*dim(counts)[2],ncol=0))
+shinydata$time = rep(seq(from=as.Date(final_dates[1]),to=as.Date(end_day),by=1),dim(counts)[2])
+shinydata$country = as.vector(t(matrix(colnames(counts),dim(counts)[2],as.numeric(as.Date(end_day)-as.Date(final_dates[1])+1))))
+shinydata$observed =  as.vector(counts[rownames(counts)<=as.Date(end_day), ])
+shinydata$rain = as.vector(rain_mean)
+shinydata$humidity = as.vector(sh_mean)
+shinydata$temperature = as.vector(temp_mean)
+shinydata$stringency = as.vector(sindex[as.Date(rownames(sindex)) <= end_day,])
+shinydata$testing = as.vector(testing[as.Date(rownames(testing)) <= end_day,])
+
+
 # Check that the order of cases and countries in the shapefile are the same
 all(colnames(counts) == africa$name)
 
@@ -98,6 +118,9 @@ end_day <- "2020-08-06"
 
 fit_start <- which(rownames(counts) == start_day) 
 fit_end <- which(rownames(counts) == end_day) 
+
+
+saveRDS(list(shinydata, africa, start_day, end_day),"output/models/shinydata.rds")
 
 # Best AR1 model with no RE 
 f_end <- ~ 1 
