@@ -29,11 +29,6 @@ rain_mean <- extrac_var_climate(var = "rain_mean", data = weather_clean)
 temp_mean <- extrac_var_climate(var = "temp_mean", data = weather_clean)
 sh_mean <- extrac_var_climate(var = "sh_mean", data = weather_clean) 
 
-# Standardise climatic variables
-rain_mean <- (rain_mean - mean(rain_mean)) / sd(rain_mean)
-temp_mean <- (temp_mean - mean(temp_mean)) / sd(temp_mean)
-sh_mean <- (sh_mean - mean(sh_mean)) / sd(sh_mean)
-
 
 # See what the common dates are for the time varying datasets and censor
 # accordingly 
@@ -63,6 +58,11 @@ shinydata$temperature = as.vector(temp_mean)
 shinydata$stringency = as.vector(sindex[as.Date(rownames(sindex)) <= end_day,])
 shinydata$testing = as.vector(testing[as.Date(rownames(testing)) <= end_day,])
 
+
+# Standardise climatic variables after saving shiny data
+rain_mean <- (rain_mean - mean(rain_mean)) / sd(rain_mean)
+temp_mean <- (temp_mean - mean(temp_mean)) / sd(temp_mean)
+sh_mean <- (sh_mean - mean(sh_mean)) / sd(sh_mean)
 
 # Check that the order of cases and countries in the shapefile are the same
 all(colnames(counts) == africa$name)
