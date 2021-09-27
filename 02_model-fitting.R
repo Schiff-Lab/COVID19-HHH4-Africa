@@ -6,6 +6,10 @@ pacman::p_load(pkgs, character.only = T)
 
 source("R/functions.R")
 
+
+# CLEAR OUTPUT FOLDER
+file.remove(list.files("output/models",full.names=TRUE))
+
 # LOAD DATA --------------------------------------------------------------------
 
 # Cases at country level
@@ -37,9 +41,9 @@ testing <- readRDS("data/processed/testing.rds")
 final_dates <- Reduce(intersect, list(rownames(counts),
                                       rownames(sindex)))
 
-# counts <- counts[rownames(counts) %in% final_dates, ]
-# sindex <- sindex[rownames(sindex) %in% final_dates, ]
-# testing <- testing[rownames(testing) %in% final_dates, ]
+counts <- counts[rownames(counts) %in% final_dates, ]
+sindex <- sindex[rownames(sindex) %in% final_dates, ]
+testing <- testing[rownames(testing) %in% final_dates, ]
 
 
 # rain_mean <- rain_mean[rownames(rain_mean) %in% final_dates,]
@@ -122,9 +126,8 @@ fit_start <- nrow(epi_sts) - days_to_predict - days_for_inferece
 fit_end <- nrow(epi_sts) - days_to_predict
 
 
-start_fit <- rownames(counts)[fit_start] 
-end_fit <- rownames(counts)[fit_end]
-saveRDS(list(shinydata, africa, start_fit, end_fit, end_day), 
+start_day <- rownames(counts)[fit_start] 
+saveRDS(list(shinydata, africa, start_day, end_day), 
         "output/models/shinydata.rds")
 
 

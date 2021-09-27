@@ -11,7 +11,15 @@ source("R/functions.R")
 counts <- readRDS("data/processed/daily_cases.rds")
 
 # Final model and auxiliary data 
-fit <- readRDS("output/models/fitted_model_LAG7_RE.rds")
+fit <- readRDS(paste0("output/models/fitted_model_LAG7_RE.rds"))
+if (fit$convergence){
+  suffix = "_RE"
+} else{
+  suffix = ""
+  fit <- readRDS(paste0("output/models/fitted_model_LAG7",suffix,".rds"))
+}
+  
+  
 
 # Shapefile for ltlas
 africa <- st_read("data/processed/geodata/africa.gpkg") 
@@ -34,12 +42,13 @@ fit$terms <- terms(fit)
 fitted <- meanHHH(theta = unname(fit$coefficients), model = fit$terms, 
                   subset = start_day:end_day, total.only = F)
 fitted$inference_dates = inference_dates
-saveRDS(fitted,"output/models/fitted_mean.rds")
+saveRDS(fitted,paste0("output/models/fitted_mean",suffix,".rds"))
 
 
 
 # RANDOM EFFECTS MAP -----------------------------------------------------------
-
+if (file.exists("output/models/fitted_model_LAG7_RE.rds")){
+  
 reff_mean <- exp(ranef(fit))
 africa$reff_mean_AR <- as.numeric(reff_mean[grep("ar.ri", names(reff_mean))])
 
@@ -52,7 +61,7 @@ reff_mean_AR <- map(x = "reff_mean_AR", shape = africa_full, palette = "-RdYlBu"
                     panel_title = "Random Effects - Within country")
     
 tmap_save(reff_mean_AR, "figs/figure3AB.pdf", width = 7, height = 8)
-  
+}
 
 # CONTRIBUTION OVER TIME FOR SPECIFIC COUNTRIES --------------------------------
 
@@ -342,7 +351,7 @@ sims$type <- "OUS"
 all_preds <- quants_insample %>% 
   bind_rows(sims)
 
-saveRDS(all_preds, "output/models/predictions.rds")
+saveRDS(all_preds,paste0("output/models/predictions",suffix,".rds"))
 
 ggplot(all_preds, aes(x = time)) +
   geom_ribbon(aes(ymin = low95, ymax = up95, fill = type), alpha = .3) +
