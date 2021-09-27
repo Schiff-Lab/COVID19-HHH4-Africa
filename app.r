@@ -22,7 +22,7 @@ library(viridis)
 
 source("R/functions.R")
 
-#Check if RE data is
+#Check if RE data is available
 if (file.exists("output/models/predictions_RE.rds")){
   suffix = "_RE"
 } else {
@@ -69,9 +69,9 @@ LayerMapping =  c(
   "SSA" = "SSA",
   "Population (millions)" = "Pop2020_Mi",
   "HDI in 2018" = "HDI_2018",
-#  "Rainfall (mm)" = "rain",
-#  "Temperature (\u00B0C)" = "temperature",
-#  "Humidity (g/kg)" = "humidity",
+  "Rainfall (mm)" = "rain",
+  "Temperature (\u00B0C)" = "temperature",
+  "Humidity (g/kg)" = "humidity",
   "Strigency" = "stringency",
   "Testing" = "testing"
 )
@@ -122,13 +122,7 @@ ui <- navbarPage("COVID-19 in Africa",
                                                        "90 days of data. The code to reproduce",
                                             "these results is available at the",
                                             tags$a(href="https://github.com/Schiff-Lab/COVID19-HHH4-Africa/tree/shiny", 
-                                                   "Schiff Lab github."),
-                                            "<br><br>",
-                                            "The version of this application that is time-locked to the dates",
-                                            "presented in the manuscript can be found",
-                                              tags$a(href="http://146.186.149.88:3838/COVID19-HHH4-Africa/", 
-                                                              "here."),
-                                            "<br><br>**Weather factors are not currently available in this version**"))) 
+                                                   "Schiff Lab github.")))) 
                             ),
                             mainPanel(  #offsetting map and time series
                               fluidRow(column(11, offset = 0, leafletOutput("mymap"))),
@@ -170,12 +164,9 @@ server <- function(input, output) {
   
   # Generate an HTML table view of the data ----
   output$table <- function(){
-    
     fit <- readRDS(paste0("output/models/fitted_model_LAG7",suffix,".rds"))
-    beta_hat <- fit$coefficients[1:14]
-    sd_hat <- fit$se[1:14]
-    #beta_hat <- fit$coefficients[1:16]
-    #sd_hat <- fit$se[1:16]
+    beta_hat <- fit$coefficients[1:16]
+    sd_hat <- fit$se[1:16]
     zscores <- beta_hat / sd_hat
     pvalues <- 2 * pnorm(abs(zscores), lower.tail = F)
     pvalues <- as.character(ifelse(pvalues < 0.001, "< 0.001", round(pvalues, 3)))
@@ -185,23 +176,16 @@ server <- function(input, output) {
     tab <- readr::read_csv(paste0("output/tables/tab_params_LAG7",suffix,".csv"))
     tab <- tab %>%
       left_join(pvalues)
-    tab <- tab[c(12,6,1:5, 7:11, 13, 14),]
-    #tab <- tab[c(16, 9, 1:8, 15, 10:14, 17, 18), ]
-    tab$pvalues[c(1, 2, 8,13,14)] <- "-"
-    #tab$pvalues[c(1, 2, 11, 17:18)] <- "-"
+    tab <- tab[c(16, 9, 1:8, 15, 10:14, 17, 18), ]
+    tab$pvalues[c(1, 2, 11, 17:18)] <- "-"
     tab[, 2:4] <- apply(tab[,2:4], 2,
                         function(x) ifelse(nchar(x) < 5, paste0(x, 0), x))
     tab$Params <- c("Intercept", "Intercept", "log(population)", "HDI",
-                    "Landlocked", "Stringency(t-7)", "Testing(t-7)",
-                    "Intercept",
+"Landlocked", "Stringency(t-7)", "Testing(t-7)",
+                    "Rain(t-7)", "Temperature(t-7)", "Humidity(t-7)",
+                    "Intercept", "log(population)",
                     "HDI", "Landlocked", "Stringency(t-7)", "Testing(t-7)",
-                    "rho", "psi")
-    #tab$Params <- c("Intercept", "Intercept", "log(population)", "HDI",
-    #                "Landlocked", "Stringency(t-7)", "Testing(t-7)",
-    #                "Rain(t-7)", "Temperature(t-7)", "Humidity(t-7)",
-    #                "Intercept", "log(population)",
-    #                "HDI", "Landlocked", "Stringency(t-7)", "Testing(t-7)",
-    #                "rho", "psi")
+                   "rho", "psi")
     CI <- paste0("(", tab$`2.5 %`, ", ", tab$`97.5 %`, ")")
     tab$`97.5 %` <- NULL
     tab$`2.5 %` <- CI
@@ -213,18 +197,9 @@ server <- function(input, output) {
       row_spec(0, bold = T) %>%
       row_spec(boldID, background = "#cdf7d6", color = "Black") %>%
       pack_rows("Endemic", 1, 1, background = "#e8e8e8") %>%
-      pack_rows("Within-country", 2, 7, background = "#e8e8e8") %>%
-      pack_rows("Between-country", 8, 12, background = "#e8e8e8") %>%
-      pack_rows("", 13, 14, background = "#e8e8e8")
-    #kbl(tab, col.names = c("Parameter", "Relative Risk", "95% CI", "p-value"),
-    #    align = c("lccc") ) %>%
-    #  kable_material(full_width = T, font_size = 20) %>%
-    #  row_spec(0, bold = T) %>%
-    #  row_spec(boldID, background = "#cdf7d6", color = "Black") %>%
-    #  pack_rows("Endemic", 1, 1, background = "#e8e8e8") %>%
-    #  pack_rows("Within-country", 2, 10, background = "#e8e8e8") %>%
-    #  pack_rows("Between-country", 11, 16, background = "#e8e8e8") %>%
-    #  pack_rows("", 17, 18, background = "#e8e8e8")
+      pack_rows("Within-country", 2, 10, background = "#e8e8e8") %>%
+      pack_rows("Between-country", 11, 16, background = "#e8e8e8") %>%
+      pack_rows("", 17, 18, background = "#e8e8e8")
   }
   
   
