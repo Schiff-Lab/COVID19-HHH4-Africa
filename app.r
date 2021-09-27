@@ -121,7 +121,7 @@ ui <- navbarPage("COVID-19 in Africa",
                                                        " (Ssentongo et al., 2021) which has been updated to include the the most recent",
                                                        "90 days of data. The code to reproduce",
                                             "these results is available at the",
-                                            tags$a(href="https://github.com/Schiff-Lab/COVID19-HHH4-Africa/tree/shiny", 
+                                            tags$a(href="https://github.com/Schiff-Lab/COVID19-HHH4-Africa", 
                                                    "Schiff Lab github.")))) 
                             ),
                             mainPanel(  #offsetting map and time series
