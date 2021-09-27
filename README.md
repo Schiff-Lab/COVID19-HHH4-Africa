@@ -4,7 +4,7 @@ This is an updated version of the R code provided in the [main branch](https://g
 
 This code was tested with R version 3.6.3 on Ubuntu 18.04 LTS and Windows and version 4.0.2 on Mac OS
 
-A visualization of daily model inputs and results can be found at our [R-shiny server](http://146.186.149.88:3838/current/COVID19-HHH4-Africa).
+A visualization of daily model inputs and results can be found at our [R-shiny server](http://146.186.149.88:3838/COVID19-HHH4-Africa-daily).
 
 Set the working directory to the one with these source files, and run these files:
 
