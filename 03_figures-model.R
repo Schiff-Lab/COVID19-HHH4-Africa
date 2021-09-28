@@ -47,7 +47,7 @@ saveRDS(fitted,paste0("output/models/fitted_mean",suffix,".rds"))
 
 
 # RANDOM EFFECTS MAP -----------------------------------------------------------
-if (file.exists("output/models/fitted_model_LAG7_RE.rds")){
+if (suffix=="_RE"){
   
 reff_mean <- exp(ranef(fit))
 africa$reff_mean_AR <- as.numeric(reff_mean[grep("ar.ri", names(reff_mean))])
